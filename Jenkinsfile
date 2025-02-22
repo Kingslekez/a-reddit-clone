@@ -65,11 +65,36 @@ pipeline{
                 sh "trivy image kingslekez/redditapp:latest > trivyimage.txt" 
             }
         }
-        stage('Deploy to container'){
-            steps{
-                sh 'docker run -d --name redditapp -p 3000:3000 kingslekez/redditapp:latest'
-            }
+         stage ('Cleanup Artifacts') {
+             steps {
+                 script {
+                      sh "docker rmi kingslekez/redditapp:latest"
+                 }
+             }
+         }
+    }
+    post {
+    always {
+        emailext attachLog: true,
+            subject: "'${currentBuild.result}'",
+            body: """
+                <html>
+                <body>
+                    <div style="background-color: #FFA07A; padding: 10px; margin-bottom: 10px;">
+                        <p style="color: white; font-weight: bold;">Project: ${env.JOB_NAME}</p>
+                    </div>
+                    <div style="background-color: #90EE90; padding: 10px; margin-bottom: 10px;">
+                        <p style="color: white; font-weight: bold;">Build Number: ${env.BUILD_NUMBER}</p>
+                    </div>
+                    <div style="background-color: #87CEEB; padding: 10px; margin-bottom: 10px;">
+                        <p style="color: white; font-weight: bold;">URL: ${env.BUILD_URL}</p>
+                    </div>
+                </body>
+                </html>
+            """,
+            to: 'ekezie10@gmail.com',
+            mimeType: 'text/html',
+            attachmentsPattern: 'trivy.txt,trivyfs.txt,trivyimage.txt'
         }
-
     }
 }
